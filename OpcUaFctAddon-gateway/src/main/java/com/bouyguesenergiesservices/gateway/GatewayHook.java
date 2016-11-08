@@ -27,6 +27,9 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     private GetOPCGatewayFunctions scriptModule;
 
 
+    public boolean isFreeModule(){
+        return true;
+    }
     @Override
     public void setup(GatewayContext gatewayContext) {
         logger.debug("setup()");
@@ -44,7 +47,6 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
 
     }
 
-//TODO : A voir la Creation d'un scriptModule STARTUP DU HOOK
     @Override
     public void startup(LicenseState licenseState) {
         logger.info("startup()");

@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>OpcUaFctAddon</name>
-    <description>BYES OPC-UA complementary functions</description>
+    <description>BYES OPC-UA functions Add-on (OPC read subscriptions, OPC through GAN...)</description>
 
     <properties>
         <ignition-sdk-version>7.9.0-SNAPSHOT</ignition-sdk-version>

@@ -18,8 +18,8 @@
         <module-version>1.0.0</module-version>
 
         <!-- Poster MODL!-->
-        <!--<gatewayTarget>http://localhost:8088</gatewayTarget>!-->
-        <gatewayTarget>http://10.11.1.4:8088</gatewayTarget>
+        <gatewayTarget>http://localhost:8088</gatewayTarget>
+        <!--<gatewayTarget>http://10.11.1.4:8088</gatewayTarget>!-->
         <!--Signer MODL!-->
         <signer-jar>${project.basedir}/src/main/resources/module-signer.jar</signer-jar>
         <signer-in_module>${project.build.directory}/${project.parent.name}-unsigned.modl</signer-in_module>
@@ -98,7 +98,7 @@
                             <goal>modl</goal>
                         </goals>
                     </execution>
-                    <!-- RLB ajout!-->
+
                     <execution>
                         <id>execution2</id>
                         <phase>install</phase>
@@ -106,7 +106,7 @@
                             <goal>post</goal>
                         </goals>
                     </execution>
-                    <!-- Fin RLB ajout!-->
+
                 </executions>
 
                 <configuration>
@@ -136,8 +136,11 @@
                     <requiredIgnitionVersion>7.8.0</requiredIgnitionVersion>
                     <requiredFrameworkVersion>7</requiredFrameworkVersion>
 
-                    <!-- RLB ajout!-->
-                   <!--<gatewayAddress>${gatewayTarget}</gatewayAddress>!-->
+                    <freeModule>true</freeModule>
+                    <licenseFile>license.html</licenseFile>
+                    <documentationFile>index.html</documentationFile>
+
+                   <gatewayAddress>${gatewayTarget}</gatewayAddress>
                     <hooks>
                         <hook>
                             <scope>C</scope>
