@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>OpcUaFctAddon</artifactId>
+        <groupId>com.bouyguesenergiesservices</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+
+    <properties>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.build.timestamp.format>yyyyMMddHH</maven.build.timestamp.format>
+
+        <module-version>1.0.0</module-version>
+
+        <!-- Poster MODL!-->
+        <!--<gatewayTarget>http://localhost:8088</gatewayTarget>!-->
+        <gatewayTarget>http://10.11.1.4:8088</gatewayTarget>
+        <!--Signer MODL!-->
+        <signer-jar>${project.basedir}/src/main/resources/module-signer.jar</signer-jar>
+        <signer-in_module>${project.build.directory}/${project.parent.name}-unsigned.modl</signer-in_module>
+        <signer-out_module>${project.build.directory}/${project.parent.name}-signed-${module-version}.modl</signer-out_module>
+        <signer-certif>${project.basedir}/src/main/resources/certif/byes_siai.p7b</signer-certif>
+        <signer-export-certif>${project.basedir}/src/main/resources/certif/export_certif.jks</signer-export-certif>
+        <signer-pwd>siai</signer-pwd>
+    </properties>
+
+
+    <artifactId>OpcUaFctAddon-build</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.bouyguesenergiesservices</groupId>
+            <artifactId>OpcUaFctAddon-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bouyguesenergiesservices</groupId>
+            <artifactId>OpcUaFctAddon-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bouyguesenergiesservices</groupId>
+            <artifactId>OpcUaFctAddon-designer</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bouyguesenergiesservices</groupId>
+            <artifactId>OpcUaFctAddon-gateway</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>-jar</argument>
+                        <jar>${signer-jar}</jar>
+                        <argument>-keystore=${signer-export-certif}</argument>
+                        <argument>-keystore-pwd=${signer-pwd}</argument>
+                        <argument>-alias=byes-siai</argument>
+                        <argument>-alias-pwd=${signer-pwd}</argument>
+                        <argument>-chain=${signer-certif}</argument>
+                        <argument>-module-in=${signer-in_module}</argument>
+                        <argument>-module-out=${signer-out_module}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+
+
+            <plugin>
+                <groupId>com.inductiveautomation.ignitionsdk</groupId>
+                <artifactId>ignition-maven-plugin</artifactId>
+                <version>1.0.12</version>
+
+                <executions>
+                    <execution>
+                        <id>execution1</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>modl</goal>
+                        </goals>
+                    </execution>
+                    <!-- RLB ajout!-->
+                    <execution>
+                        <id>execution2</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>post</goal>
+                        </goals>
+                    </execution>
+                    <!-- Fin RLB ajout!-->
+                </executions>
+
+                <configuration>
+                    <projectScopes>
+                        <projectScope>
+                            <name>OpcUaFctAddon-client</name>
+                            <scope>C</scope>
+                        </projectScope>
+                        <projectScope>
+                            <name>OpcUaFctAddon-common</name>
+                            <scope>CDG</scope>
+                        </projectScope>
+                        <projectScope>
+                            <name>OpcUaFctAddon-designer</name>
+                            <scope>CD</scope>
+                        </projectScope>
+                       <projectScope>
+                            <name>OpcUaFctAddon-gateway</name>
+                            <scope>G</scope>
+                        </projectScope>
+                    </projectScopes>
+
+                    <moduleId>com.bouyguesenergiesservices.FctExpose</moduleId>
+                    <moduleName>${project.parent.name}</moduleName>
+                    <moduleDescription>${project.description}</moduleDescription>
+                    <moduleVersion>${module-version}.${timestamp}</moduleVersion>
+                    <requiredIgnitionVersion>7.8.0</requiredIgnitionVersion>
+                    <requiredFrameworkVersion>7</requiredFrameworkVersion>
+
+                    <!-- RLB ajout!-->
+                   <!--<gatewayAddress>${gatewayTarget}</gatewayAddress>!-->
+                    <hooks>
+                        <hook>
+                            <scope>C</scope>
+                            <hookClass>com.bouyguesenergiesservices.client.ClientHook</hookClass>
+                        </hook>
+                        <hook>
+                            <scope>D</scope>
+                            <hookClass>com.bouyguesenergiesservices.designer.DesignerHook</hookClass>
+                        </hook>
+                        <hook>
+                            <scope>G</scope>
+                            <hookClass>com.bouyguesenergiesservices.gateway.GatewayHook</hookClass>
+                        </hook>
+                    </hooks>
+
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
