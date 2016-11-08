@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Audit Log Splitter User Manual</title>
+<title>Opc-Ua Functions Add-on User Manual</title>
 </head>
 <body>
 
 <div class="align_image">
-    <H2><img src="byes.png" width="121" height="66" alt="BYES logo" /><span>BYES Apps - Audit Log Splitter</span></H2>
+    <H2><img src="byes.png" width="121" height="66" alt="BYES logo" /><span>BYES Apps - Opc-Ua Functions Add-on</span></H2>
 </div>
 
 <style media="screen" type="text/css">
@@ -20,69 +20,12 @@
 </style>
 
 <p>Instructions :</p>
-Simply add a new audit profile in the Ignition Gateway configuration page under Security &gt; Auditing. Select <b>three</b> different database connections to mirror the audit records.</p>
-<p><b>Note: Make sure to attach the new audit profile to your project or alarm notification profile to take effect.</b></p>
+Just add the module to ignition and call functions in a client scripting 'system.byes.opc'. Use completion for help
 
 <p>ChangeLog :
 <ul>
-    <li>1.7.0 : <br>
+    <li>1.0.0 : <br>
         <ul><li>IA release</li></li></ul>
-    <li>2.0.0 : <br>
-        <ul><li>upgrade from 2 to 3 audit connections</li></li></ul>
-    <li>2.0.1 :<br>
-        <ul><li>Filter SAGT keepalive</li>
-        </ul>
-    </li>
-    <li>2.0.2 : Ignition 7.8 support<br>
-        <ul><li>Add ignition scripting function for Gateway,Designer and Client scope : <b>system.audit.addAudit()</b> to store audit record</li>
-
-            <br>Example : <br><br>
-
-            import system.audit <br><br>
-
-            actor ="A" <br>
-            actorHost ="AH" <br>
-            action ="AC" <br>
-            actionTarget = "AT" <br>
-            actionValue = "AV" <br>
-            statusCode = 0 <br>
-            timestamp = system.date.now() <br>
-            originatingSystem = "S" <br>
-            #context. 0x01 = Gateway, 0x02 = Designer, 0x04 = Client.<br>
-            originatingContext = 4 <br><br>
-
-            system.audit.addAudit(actor,actorHost,action,actionTarget,actionValue,statusCode,timestamp, originatingSystem,originatingContext) <br>
-
-        </ul>
-    </li>
-    <br>
-    <li>3.0.1 : Ignition 7.9 support<br>
-        <ul><li>Add ignition scripting function for Gateway,Designer and Client scope : <b>system.audit.getAuditLogs()</b> to query audit of remotes gateway </li>
-
-            <br>Example : <br><br>
-            import system<br>
-            import system.audit<br>
-
-            remoteServers = ["GTC-EST"]<br>
-            remoteProfil = ["audit_split"]<br>
-            actorFilter = ""<br>
-            actionFilter = ""<br>
-            actionTargetFilter = ""<br>
-            actionValueFilter = ""<br>
-            startTime = system.date.addDays(system.date.now(),-30)<br>
-            endTime = system.date.now()<br>
-            systemFilter = ""<br>
-            contextFilter = 0<br>
-
-            data =  system.audit.getAuditLogs(remoteServers,remoteProfil,actorFilter, actionFilter, actionTargetFilter, actionValueFilter, startTime,endTime, systemFilter, contextFilter)<br>
-            print data<br>
-
-            res = data["GTC-EST"]<br>
-            for row in range(res.rowCount):<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;for col in range(res.columnCount):<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;print res.getValueAt(row, col)<br>
-
-        </ul>
     </li>
     <br>
 </ul>
