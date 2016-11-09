@@ -46,7 +46,7 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
         //Creation du gestionnaire de timeout des souscriptions
         TimeoutSubscriptionManager timeoutManager = new TimeoutSubscriptionManager();
-        execm.register("ByesFctExpose","GetOPCGatewayFunctions", timeoutManager,RATE_TIMEOUT_MANAGER, TimeUnit.MILLISECONDS);
+        execm.register("OpcUaFctAddon","GetOPCGatewayFunctions", timeoutManager,RATE_TIMEOUT_MANAGER, TimeUnit.MILLISECONDS);
 
     }
 
@@ -221,7 +221,7 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
     public void shutdownGatewayScriptModule(){
         unsubscribeAllImpl();
-        execm.unRegisterAll("ByesFctExpose");
+        execm.unRegisterAll("OpcUaFctAddon");
 
     }
 

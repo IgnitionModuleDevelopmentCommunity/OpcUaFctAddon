@@ -15,7 +15,7 @@ public class GetOPCClientFunctions extends GetOPCScriptFunctions {
     private final GetOPCRPC script;
 
     public GetOPCClientFunctions(){
-        script = ModuleRPCFactory.create("com.byes.ByesFctExpose", GetOPCRPC.class);
+        script = ModuleRPCFactory.create("com.bouyguesenergiesservices.ignition.OpcUaFctAddon", GetOPCRPC.class);
     }
 
     @Override

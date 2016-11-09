@@ -30,6 +30,8 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     public boolean isFreeModule(){
         return true;
     }
+
+
     @Override
     public void setup(GatewayContext gatewayContext) {
         logger.debug("setup()");
