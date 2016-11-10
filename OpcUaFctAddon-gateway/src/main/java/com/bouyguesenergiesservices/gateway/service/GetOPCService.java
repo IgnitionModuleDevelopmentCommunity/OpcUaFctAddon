@@ -12,23 +12,8 @@ import java.util.List;
 /**
  * Created by mattgross on 9/19/2016.
  */
-//@TrialPeriodProtected(moduleId = "com.example.get-remote-logs")
 public interface GetOPCService {
 
-    String WRAPPER_ALLOWED_PROP = "wrapper-retrieve-allowed";
-    String ACCESS_KEY = "wrapper-service-key";
-    String SUCCESS_MSG = "SUCCESS";
-    String FAIL_MSG = "FAIL";
-
-
-
-
-    /***
-     * Provides a List of QualifiedValue of Item Path to the calling gateway OPC connection declare.
-     * @param opcServer Name of OPC connexion.
-     * @param lstItemPath List of Itemp path to read.
-     * @return a List of QualifiedValue, or an empty List if no opsServer are available.
-     ***/
 
     List<QualifiedValue> getServiceReadValues(String opcServer, List<String> lstItemPath);
 

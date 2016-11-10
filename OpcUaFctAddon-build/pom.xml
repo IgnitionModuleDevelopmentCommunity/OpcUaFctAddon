@@ -19,7 +19,9 @@
 
         <!-- Poster MODL!-->
         <!--<gatewayTarget>http://localhost:8088</gatewayTarget>!-->
-        <gatewayTarget>http://10.11.1.1:8088</gatewayTarget>
+        <gatewayTarget1>http://10.11.1.1:8088</gatewayTarget1><!--Gateway du Est!-->
+        <gatewayTarget2>http://10.11.1.4:8088</gatewayTarget2><!--Gateway du Nord!-->
+
         <!--Signer MODL!-->
         <signer-jar>${project.basedir}/src/main/resources/module-signer.jar</signer-jar>
         <signer-in_module>${project.build.directory}/${project.parent.name}-unsigned.modl</signer-in_module>
@@ -57,33 +59,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.5.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>java</executable>
-                    <arguments>
-                        <argument>-jar</argument>
-                        <jar>${signer-jar}</jar>
-                        <argument>-keystore=${signer-export-certif}</argument>
-                        <argument>-keystore-pwd=${signer-pwd}</argument>
-                        <argument>-alias=byes-siai</argument>
-                        <argument>-alias-pwd=${signer-pwd}</argument>
-                        <argument>-chain=${signer-certif}</argument>
-                        <argument>-module-in=${signer-in_module}</argument>
-                        <argument>-module-out=${signer-out_module}</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
-
 
             <plugin>
                 <groupId>com.inductiveautomation.ignitionsdk</groupId>
@@ -105,8 +80,25 @@
                         <goals>
                             <goal>post</goal>
                         </goals>
+                        <configuration>
+                            <gatewayAddress>${gatewayTarget1}</gatewayAddress>
+                            <moduleFile>${signer-out_module}</moduleFile>
+                            <moduleName>${project.parent.name}</moduleName>
+                        </configuration>
                     </execution>
 
+                    <execution>
+                        <id>execution3</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>post</goal>
+                        </goals>
+                        <configuration>
+                            <gatewayAddress>${gatewayTarget2}</gatewayAddress>
+                            <moduleFile>${signer-out_module}</moduleFile>
+                            <moduleName>${project.parent.name}</moduleName>
+                        </configuration>
+                    </execution>
                 </executions>
 
                 <configuration>
@@ -135,12 +127,9 @@
                     <moduleVersion>${module-version}.${timestamp}</moduleVersion>
                     <requiredIgnitionVersion>7.8.0</requiredIgnitionVersion>
                     <requiredFrameworkVersion>7</requiredFrameworkVersion>
-
-                    <freeModule>true</freeModule>
                     <licenseFile>license.html</licenseFile>
                     <documentationFile>index.html</documentationFile>
 
-                   <gatewayAddress>${gatewayTarget}</gatewayAddress>
                     <hooks>
                         <hook>
                             <scope>C</scope>
@@ -158,6 +147,35 @@
 
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>-jar</argument>
+                        <jar>${signer-jar}</jar>
+                        <argument>-keystore=${signer-export-certif}</argument>
+                        <argument>-keystore-pwd=${signer-pwd}</argument>
+                        <argument>-alias=byes-siai</argument>
+                        <argument>-alias-pwd=${signer-pwd}</argument>
+                        <argument>-chain=${signer-certif}</argument>
+                        <argument>-module-in=${signer-in_module}</argument>
+                        <argument>-module-out=${signer-out_module}</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 

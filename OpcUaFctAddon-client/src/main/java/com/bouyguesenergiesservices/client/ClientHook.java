@@ -18,7 +18,7 @@ public class ClientHook extends AbstractClientModuleHook {
                 "system.byes.opc",
                 new GetOPCClientFunctions(),
                 new PropertiesFileDocProvider());
-        logger.debug("initializeScriptManager()");
+        if (logger.isDebugEnabled()) logger.debug("initializeScriptManager()");
     }
 
 }

@@ -19,68 +19,39 @@ public class GetOPCClientFunctions extends GetOPCScriptFunctions {
     }
 
     @Override
-    protected List<QualifiedValue> readValuesImpl(String opcServer, List<String> lstItemPath) {
-        return script.readValues(opcServer,lstItemPath);
+    protected List<QualifiedValue> readValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath) {
+        return script.readValues(remoteServer,opcServer,lstItemPath);
     }
 
 
     @Override
-    protected boolean isSubscribeImpl(String subscriptionName) {
-        return script.isSubscribe(subscriptionName);
+    protected boolean isSubscribeImpl(String remoteServer, String subscriptionName) {
+        return script.isSubscribe(remoteServer,subscriptionName);
     }
 
     @Override
-    protected String subscribeImpl(String opcServer, List<String> lstItemPath, int rate) {
-        return script.subscribe(opcServer, lstItemPath,rate);
+    protected String subscribeImpl(String remoteServer, String opcServer, List<String> lstItemPath, int rate) {
+        return script.subscribe(remoteServer,opcServer, lstItemPath,rate);
     }
 
     @Override
-    protected List<QualifiedValue> readSubscribeValuesImpl(String subscriptionName) {
-        return  script.readSubscribeValues(subscriptionName);
+    protected List<QualifiedValue> readSubscribeValuesImpl(String remoteServer, String subscriptionName) {
+        return  script.readSubscribeValues(remoteServer,subscriptionName);
     }
 
     @Override
-    protected boolean unsubscribeImpl(String subscriptionName) {
-        return script.unsubscribe(subscriptionName);
+    protected boolean unsubscribeImpl(String remoteServer, String subscriptionName) {
+        return script.unsubscribe(remoteServer,subscriptionName);
     }
 
     @Override
-    protected void unsubscribeAllImpl() {
-        script.unsubscribeAll();
+    protected void unsubscribeAllImpl(String remoteServer) {
+        script.unsubscribeAll(remoteServer);
     }
 
 
-    //GAN Implementation Functions
 
-    @Override
-    protected List<QualifiedValue> getRemoteReadValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath) {
-        return script.getRemoteReadValues(remoteServer, opcServer, lstItemPath);
-    }
 
-    @Override
-    protected boolean getRemoteIsSubscribeImpl(String remoteServer, String subscriptionName) {
-        return script.getRemoteIsSubscribe(remoteServer, subscriptionName);
-    }
-
-    @Override
-    protected String getRemoteSubscribeImpl(String remoteServer, String opcServer, List<String> lstItemPath, int rate) {
-        return script.getRemoteSubscribe( remoteServer, opcServer, lstItemPath, rate);
-    }
-
-    @Override
-    protected List<QualifiedValue> getRemoteReadSubscribeValuesImpl(String remoteServer, String subscriptionName) {
-        return script.getRemoteReadSubscribeValues(remoteServer, subscriptionName);
-    }
-
-    @Override
-    protected boolean getRemoteUnsubscribeImpl(String remoteServer, String subscriptionName) {
-        return script.getRemoteUnsubscribe(remoteServer, subscriptionName);
-    }
-
-    @Override
-    protected void getRemoteUnsubscribeAllImpl(String remoteServer) {
-        script.getRemoteUnsubscribeAll(remoteServer);
-    }
 
 
 }

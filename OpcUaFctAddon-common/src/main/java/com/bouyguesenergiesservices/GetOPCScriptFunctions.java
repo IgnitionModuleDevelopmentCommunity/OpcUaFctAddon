@@ -24,115 +24,63 @@ public abstract class GetOPCScriptFunctions implements GetOPCRPC {
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public List<QualifiedValue> readValues( @ScriptArg("opcServer") String opcServer,
-                         @ScriptArg("lstItemPath") List<String> lstItemPath) {
-        return readValuesImpl(opcServer, lstItemPath);
+    public List<QualifiedValue> readValues(@ScriptArg("remoteServer") String remoteServer,
+                                           @ScriptArg("opcServer") String opcServer,
+                                           @ScriptArg("lstItemPath") List<String> lstItemPath) {
+        return readValuesImpl(remoteServer,opcServer, lstItemPath);
     }
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public boolean isSubscribe(@ScriptArg("subscriptionName")String subscriptionName){
-        return isSubscribeImpl(subscriptionName);
-    }
-
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public String subscribe(@ScriptArg("opcServer")String opcServer,
-                          @ScriptArg("lstItemPath")List<String> lstItemPath,
-                          @ScriptArg("rate")int rate){
-        return subscribeImpl(opcServer, lstItemPath, rate);
-    }
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public List<QualifiedValue> readSubscribeValues(@ScriptArg("subscriptionName")String subscriptionName){
-        return readSubscribeValuesImpl(subscriptionName);
-    }
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public boolean unsubscribe(@ScriptArg("subscriptionName")String subscriptionName){
-        return unsubscribeImpl(subscriptionName);
-    }
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public void unsubscribeAll(){
-        unsubscribeAllImpl();
+    public boolean isSubscribe(@ScriptArg("remoteServer") String remoteServer,
+                               @ScriptArg("subscriptionName")String subscriptionName){
+        return isSubscribeImpl(remoteServer,subscriptionName);
     }
 
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public List<QualifiedValue> getRemoteReadValues( @ScriptArg("remoteServer") String remoteServer,
-                                                     @ScriptArg("opcServer") String opcServer,
-                                                     @ScriptArg("lstItemPath") List<String> lstItemPath) {
-        return getRemoteReadValuesImpl(remoteServer,opcServer, lstItemPath);
+    public String subscribe(@ScriptArg("remoteServer") String remoteServer,
+                            @ScriptArg("opcServer")String opcServer,
+                            @ScriptArg("lstItemPath")List<String> lstItemPath,
+                            @ScriptArg("rate")int rate){
+        return subscribeImpl(remoteServer,opcServer, lstItemPath, rate);
     }
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public boolean getRemoteIsSubscribe( @ScriptArg("remoteServer") String remoteServer,
-                                         @ScriptArg("subscriptionName")String subscriptionName){
-        return getRemoteIsSubscribeImpl(remoteServer,subscriptionName);
+    public List<QualifiedValue> readSubscribeValues(@ScriptArg("remoteServer") String remoteServer,
+                                                    @ScriptArg("subscriptionName")String subscriptionName){
+        return readSubscribeValuesImpl(remoteServer,subscriptionName);
     }
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public String getRemoteSubscribe( @ScriptArg("remoteServer") String remoteServer,
-                                      @ScriptArg("opcServer")String opcServer,
-                                      @ScriptArg("lstItemPath")List<String> lstItemPath,
-                                      @ScriptArg("rate")int rate){
-        return getRemoteSubscribeImpl(remoteServer,opcServer, lstItemPath, rate);
+    public boolean unsubscribe(@ScriptArg("remoteServer") String remoteServer,
+                               @ScriptArg("subscriptionName")String subscriptionName){
+        return unsubscribeImpl(remoteServer,subscriptionName);
     }
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public List<QualifiedValue> getRemoteReadSubscribeValues( @ScriptArg("remoteServer") String remoteServer,
-                                                              @ScriptArg("subscriptionName")String subscriptionName){
-        return getRemoteReadSubscribeValuesImpl(remoteServer,subscriptionName);
-    }
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public boolean getRemoteUnsubscribe( @ScriptArg("remoteServer") String remoteServer,
-                                         @ScriptArg("subscriptionName")String subscriptionName){
-        return getRemoteUnsubscribeImpl(remoteServer,subscriptionName);
-    }
-
-    @Override
-    @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
-    public void getRemoteUnsubscribeAll( @ScriptArg("remoteServer") String remoteServer){
-        getRemoteUnsubscribeAllImpl(remoteServer);
+    public void unsubscribeAll(@ScriptArg("remoteServer") String remoteServer){
+        unsubscribeAllImpl(remoteServer);
     }
 
 
+    //Fonctions a implementer non exposees
+    protected abstract List<QualifiedValue> readValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath);
+
+    protected abstract boolean isSubscribeImpl(String remoteServer, String subscriptionName);
+
+    protected abstract String subscribeImpl(String remoteServer, String opcServer, List<String> lstItemPath, int rate);
+
+    protected abstract List<QualifiedValue> readSubscribeValuesImpl(String remoteServer, String subscriptionName);
+
+    protected abstract boolean unsubscribeImpl(String remoteServer, String subscriptionName);
+
+    protected abstract void unsubscribeAllImpl(String remoteServer);
 
 
 
-    protected abstract List<QualifiedValue> readValuesImpl(String opcServer, List<String> lstItemPath);
-
-    protected abstract boolean isSubscribeImpl(String subscriptionName);
-
-    protected abstract String subscribeImpl(String opcServer, List<String> lstItemPath, int rate);
-
-    protected abstract List<QualifiedValue> readSubscribeValuesImpl(String subscriptionName);
-
-    protected abstract boolean unsubscribeImpl(String subscriptionName);
-
-    protected abstract void unsubscribeAllImpl();
-
-    //GAN Functions Implement
-    protected abstract List<QualifiedValue> getRemoteReadValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath);
-
-    protected abstract boolean getRemoteIsSubscribeImpl(String remoteServer, String subscriptionName);
-
-    protected abstract String getRemoteSubscribeImpl(String remoteServer,String opcServer, List<String> lstItemPath, int rate);
-
-    protected abstract List<QualifiedValue> getRemoteReadSubscribeValuesImpl(String remoteServer,String subscriptionName);
-
-    protected abstract boolean getRemoteUnsubscribeImpl(String remoteServer,String subscriptionName);
-
-    protected abstract void getRemoteUnsubscribeAllImpl(String remoteServer);
 }

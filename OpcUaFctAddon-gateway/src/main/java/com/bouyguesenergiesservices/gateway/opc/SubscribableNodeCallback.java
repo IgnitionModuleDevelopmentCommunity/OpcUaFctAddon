@@ -40,7 +40,7 @@ public class SubscribableNodeCallback implements SubscribableNode {
     public void setValue(QualifiedValue qualifiedValue) {
         this.qualifiedValue = qualifiedValue;
         this.refresh.set(true);
-        logger.trace("SubscribableNodeCallback:setValue[{} - Node:[{}] Value:[{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), qualifiedValue.getValue().toString());
+        logger.trace("setValue()> Changement de valeur [subscriptionName:{}, node:{}, value:{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), qualifiedValue.getValue().toString());
     }
 
     @Override
@@ -49,9 +49,9 @@ public class SubscribableNodeCallback implements SubscribableNode {
         if (!quality.equals(this.quality)){
             this.quality = quality;
             this.refresh.set(true);
-            logger.trace("SubscribableNodeCallback:setQuality [{} - Node:[{}] Value:[{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), quality.toString());
+            logger.trace("setQuality()> Changement d'état [subscriptionName:{}, node:{}, value:{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), quality.toString());
         } else{
-            logger.trace("SubscribableNodeCallback:setQuality Pas de changement [{} - Node:[{}] Value:[{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), quality.toString());
+            logger.trace("setQuality()> Pas de nouveaux changements [subscriptionName:{}, node:{}, value:{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), quality.toString());
 
         }
 

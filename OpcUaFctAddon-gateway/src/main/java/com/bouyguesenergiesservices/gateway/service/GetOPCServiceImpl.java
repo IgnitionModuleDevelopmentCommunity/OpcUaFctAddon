@@ -28,7 +28,7 @@ public class GetOPCServiceImpl implements GetOPCService{
     @Override
     public List<QualifiedValue> getServiceReadValues(String opcServer, List<String> lstItemPath) {
 
-        logger.info("Scope local gateway : getServiceReadValues");
+        logger.debug("getServiceReadValues()> Scope local gateway");
 
         return scriptModule.readValues(opcServer,lstItemPath);
 
@@ -36,31 +36,31 @@ public class GetOPCServiceImpl implements GetOPCService{
 
     @Override
     public boolean getServiceIsSubscribe(String subscriptionName) {
-        logger.info("Scope local gateway : getServiceIsSubscribe");
+        logger.debug("getServiceIsSubscribe()> Scope local gateway");
         return scriptModule.isSubscribe(subscriptionName);
     }
 
     @Override
     public String getServiceSubscribe(String opcServer, List<String> lstItemPath, int rate) {
-        logger.info("Scope local gateway : getServiceSubscribe");
+        logger.debug("getServiceSubscribe()> Scope local gateway");
         return scriptModule.subscribe(opcServer, lstItemPath, rate);
     }
 
     @Override
     public List<QualifiedValue> getServiceReadSubscribeValues(String subscriptionName) {
-        logger.info("Scope local gateway : getServiceReadSubscribeValues");
+        logger.debug("getServiceReadSubscribeValues()> Scope local gateway");
         return scriptModule.readSubscribeValues(subscriptionName);
     }
 
     @Override
     public boolean getServiceUnsubscribe(String subscriptionName) {
-        logger.info("Scope local gateway : getServiceUnsubscribe");
+        logger.debug("getServiceUnsubscribe()> Scope local gateway");
         return scriptModule.unsubscribe(subscriptionName);
     }
 
     @Override
     public void getServiceUnsubscribeAll() {
-        logger.info("Scope local gateway : getServiceUnsubscribeAll");
+        logger.debug("getServiceUnsubscribeAll()> Scope local gateway");
         scriptModule.unsubscribeAll();
     }
 }

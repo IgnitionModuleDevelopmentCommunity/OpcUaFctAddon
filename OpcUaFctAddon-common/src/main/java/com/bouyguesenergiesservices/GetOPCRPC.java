@@ -10,28 +10,16 @@ import java.util.List;
  */
 public interface GetOPCRPC {
 
-    List<QualifiedValue> readValues(String opcServer, List<String> lstItemPath);
+    List<QualifiedValue> readValues(String remoteServer,String opcServer, List<String> lstItemPath);
 
-    boolean isSubscribe(String subscriptionName);
+    boolean isSubscribe(String remoteServer,String subscriptionName);
 
-    String subscribe(String opcServer, List<String> lstItemPath, int rate);
+    String subscribe(String remoteServer,String opcServer, List<String> lstItemPath, int rate);
 
-    List<QualifiedValue> readSubscribeValues(String subscriptionName);
+    List<QualifiedValue> readSubscribeValues(String remoteServer,String subscriptionName);
 
-    boolean unsubscribe(String subscriptionName);
+    boolean unsubscribe(String remoteServer,String subscriptionName);
 
-    void unsubscribeAll();
-
-    List<QualifiedValue> getRemoteReadValues(String remoteServer,String opcServer, List<String> lstItemPath);
-
-    boolean getRemoteIsSubscribe(String remoteServer,String subscriptionName);
-
-    String getRemoteSubscribe(String remoteServer,String opcServer, List<String> lstItemPath, int rate);
-
-    List<QualifiedValue> getRemoteReadSubscribeValues(String remoteServer,String subscriptionName);
-
-    boolean getRemoteUnsubscribe(String remoteServer,String subscriptionName);
-
-    void getRemoteUnsubscribeAll(String remoteServer);
+    void unsubscribeAll(String remoteServer);
 
 }
