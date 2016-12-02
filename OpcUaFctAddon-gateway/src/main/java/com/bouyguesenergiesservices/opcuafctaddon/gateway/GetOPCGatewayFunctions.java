@@ -1,9 +1,9 @@
-package com.bouyguesenergiesservices.gateway;
+package com.bouyguesenergiesservices.opcuafctaddon.gateway;
 
 
-import com.bouyguesenergiesservices.gateway.opc.SubscribableNodeCallback;
-import com.bouyguesenergiesservices.GetOPCScriptFunctions;
-import com.bouyguesenergiesservices.gateway.service.GetOPCService;
+import com.bouyguesenergiesservices.opcuafctaddon.GetOPCScriptFunctions;
+import com.bouyguesenergiesservices.opcuafctaddon.gateway.opc.SubscribableNodeCallback;
+import com.bouyguesenergiesservices.opcuafctaddon.gateway.service.GetOPCService;
 import com.inductiveautomation.ignition.common.execution.ExecutionManager;
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
 import com.inductiveautomation.ignition.common.opc.BasicServerNodeId;
@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 
 /**
  * Created by regis on 19/10/2016.
+ *
+ * Gateway implementation of GetOPCScriptFunctions. The actual code to retrieve
+ * remote OPC function is in the passed rpc object.
  */
 public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
@@ -43,7 +46,7 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
     private final GatewayAreaNetworkManager ganm;
     private final String serverCurrentName;
 
-    //Creation du gestionnaire de timeout des souscriptions
+    //The manager of the Timeout Subscription
     private TimeoutSubscriptionManager timeoutManager = new TimeoutSubscriptionManager();
 
     private ConcurrentHashMap<String,SubscriptionConfig> atomLstSubscription = new ConcurrentHashMap<>();
@@ -56,6 +59,13 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
     }
 
+    /**
+     * Manage an Atomic object LstSubscription - Add an Item
+     * If it's the first item, create a Timeout of subscription Manager
+     *
+     * @param subscriptionName UID of the subscription declare
+     * @param configSubs A descriptor of the subscription
+     */
     private void addRefSubscription(String subscriptionName,SubscriptionConfig configSubs){
 
         //Relance du gestion de Timeout de souscription si 1 elt dans la liste des souscriptions
@@ -65,29 +75,53 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
         }
 
         atomLstSubscription.putIfAbsent(subscriptionName,configSubs);
-
     }
 
+    /**
+     * Manage an Atomic object LstSubscription - Get an Item
+     *
+     * @param subscriptionName UID of the subscription declare
+     *
+     * @return SubscriptionConfig The subscription find
+     */
     private SubscriptionConfig getRefSubscriptionConfig(String subscriptionName){
         return atomLstSubscription.get(subscriptionName);
     }
 
-    private  Map<String,SubscriptionConfig> getAllSubscriptionConfig(){
-        return atomLstSubscription;
-    }
+    /**
+     * Manage an Atomic object LstSubscription - Get All Items
+     *
+     * @return Map&lt;String,SubscriptionConfig&gt; Snapshot of Atomic object LstSubscription
+     */
+    private  Map<String,SubscriptionConfig> getAllSubscriptionConfig(){return atomLstSubscription;}
 
+    /**
+     * Manage an Atomic object LstSubscription - Get all Keys "subscription UID"
+     *
+     * @return Set&lt;String&gt; All subscription
+     */
     private Set<String> getKeysSubscriptionConfig(){
         return atomLstSubscription.keySet();
     }
 
-    private void updateRefSubscriptionConfig(String name, SubscriptionConfig subsConfig){
-        atomLstSubscription.replace(name,subsConfig);
-    }
+    /**
+     * Manage an Atomic object LstSubscription - Replace or Update an item
+     *
+     * @param name UID of the subscription declare
+     * @param subsConfig An descriptor of the subscription
+     */
+    private void updateRefSubscriptionConfig(String name, SubscriptionConfig subsConfig){atomLstSubscription.replace(name,subsConfig);}
 
+    /**
+     * Manage an Atomic object LstSubscription - Remove an item
+     *
+     * @param name UID of the subscription declare
+     */
     private void removeRefSubscriptionConfig(String name){
 
         atomLstSubscription.remove(name);
 
+        //Stop the Timeout Subscription Manager
         if (atomLstSubscription.isEmpty()){
             logger.debug("removeRefSubscriptionConfig()> Arret du gestionnaire de souscription");
             execm.unRegister("OpcUaFctAddon",TimeoutSubscriptionManager.class.getName());
@@ -98,7 +132,6 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
     @Override
     protected List<QualifiedValue> readValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath) {
-
 
         if (remoteServer.equals(serverCurrentName)){
             logger.debug("readValuesImpl()> Fct traite en locale");
@@ -146,6 +179,7 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
     @Override
     protected boolean isSubscribeImpl(String remoteServer,String subscriptionName) {
+
         if (remoteServer.equals(serverCurrentName)){
             if (logger.isDebugEnabled()) logger.debug("isSubscribeImpl()> Fct traite en locale");
             return isSubscribe(subscriptionName);
@@ -236,9 +270,14 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
     }
 
 
-    /***
-     * Lecture OPC Basic Local
-     ***/
+    /**
+     * Equivalent to the system.opc.readValue in the local gateway to Local.(Lecture OPC Basic Local)
+     *
+     * @param opcServer The name of the OPC server connection in which the items reside.
+     * @param lstItemPath A list of strings, each representing an item path, or address to read from.
+     *
+     * @return QualifiedValue[] A sequence of objects, one for each address specified, in order. Each object will contains the value, quality, and timestamp returned from the OPC server for the corresponding address.
+     */
     public List<QualifiedValue> readValues(String opcServer, List<String> lstItemPath) {
 
         //Conversion de la List<String> en List<ServerNodeId>
@@ -253,19 +292,25 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
     }
 
 
-
+    /**
+     * Declare an OPC Subscription (locally ) with lstItemPath (only integer type).
+     * Call cyclically the readSubscribeValues to refresh all values.
+     *
+     * @param opcServer The name of the OPC server connection in which the items reside.
+     * @param lstItemPath A list of strings, each representing an item path, or address to read from.
+     * @param rate Frequency of the subscription
+     *
+     * @return String UID of the subscription declare
+     */
     public String subscribe(String opcServer, List<String> lstItemPath, int rate) {
 
         String subscriptionName = String.format("Subscribe_%s" ,UUID.randomUUID());
         opcm.setSubscriptionRate(subscriptionName,rate);
         logger.debug("subscribeImpl()> Creation de la souscription [subscriptionName:{}]",subscriptionName);
 
-
         SubscriptionConfig configSubs = new SubscriptionConfig(subscriptionName,opcServer, lstItemPath);
         logger.debug("subscribeImpl()> Creation du referentiel de la souscription[{}]",configSubs);
         opcm.subscribe(configSubs.getListSubscribableNode());
-
-
 
         //Enregistrement de la liste Tag de la souscription
         addRefSubscription(subscriptionName,configSubs);
@@ -273,16 +318,31 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
         return subscriptionName;
     }
 
+    /**
+     * Check if the specify Subscription Name is currently exist in the local gateway.
+     *
+     * @param subscriptionName UID of the subscription research
+     *
+     * @return boolean True, if the subscription is currently declare and managed else False.
+     */
     public boolean isSubscribe(String subscriptionName) {
 
         SubscriptionConfig subsConfig = getRefSubscriptionConfig(subscriptionName);
 
         return subsConfig != null;
-
     }
 
 
 
+    /**
+     * Get all last OPC values states of lstItemPath subscribe before subscriptionName in the local gateway .
+     * If there is no change until the previous calling, None is return.
+     * If a subscription isn't read with "readSubscribeValues" function 30 seconds later, it is automatically unsubscribe (Timeout).
+     *
+     * @param subscriptionName UID of the subscription
+     *
+     * @return QualifiedValue[] A sequence of ALL objects (even unchanged object), one for each address specified, in order. Each object will contains the value, quality, and timestamp returned from the OPC server for the corresponding address.
+     */
     public List<QualifiedValue> readSubscribeValues(String subscriptionName) {
 
         SubscriptionConfig subsConfig = getRefSubscriptionConfig(subscriptionName);
@@ -309,12 +369,17 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
                 if (logger.isDebugEnabled()) logger.debug("readSubscribeValues()> Pas de valeurs changees");
             }
 
-
         }return null;
     }
 
 
-
+    /**
+     * This function close an active subscription declare locally.
+     *
+     * @param subscriptionName UID of the subscription
+     *
+     * @return boolean True if the subscription exist and close.
+     */
     public boolean unsubscribe(String subscriptionName) {
 
         SubscriptionConfig subsConfig = getRefSubscriptionConfig(subscriptionName);
@@ -335,18 +400,18 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
     }
 
 
-
-
-
+    /**
+     * Closed all active Subscription on this local Gateway
+     */
     public void unsubscribeAll() {
         //Liberation de chaque souscription
         getKeysSubscriptionConfig().forEach(this::unsubscribe);
 
     }
 
-
-
-
+    /**
+     * This function unsubscribe all active Subscription and unregister allocate resources
+     */
     public void shutdownGatewayScriptModule(){
         //liberation des ressources allouees
         unsubscribeAll();
@@ -355,9 +420,11 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
 
     /**
-     * Function 'GetOPCService' Interface available on any Gateway
+     * Function that call a GAN service type 'GetOPCService' Interface available on any Gateway
+     *
      * @param remoteServer Name of the remote Gateway Server
-     * @return return an interface GetOPCService available on the remoteServer
+     *
+     * @return  GetOPCService an interface available on the remoteServer
      */
     private GetOPCService callGANService(String remoteServer){
         GetOPCService opcService = null;
@@ -368,8 +435,8 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
         ServiceState state = sm.getRemoteServiceState(serverId, GetOPCService.class);
         if (state != ServiceState.Available){
             logger.warn("callGANService()> Service indisponible [serveur:{}, currentState:{}]",
-                    serverId.toDescriptiveString(),
-                    state.toString());
+                serverId.toDescriptiveString(),
+                state.toString());
         } else {
             // The service call will time out after 60 seconds if no response is received from the remote Gateway.
             opcService =  sm.getService(serverId,GetOPCService.class).get();
@@ -379,18 +446,14 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
 
 
 
-
-
-
-
-
     /**
-     * Descripteur de la souscription
+     * Class of Subscription element descriptor
      */
     private class SubscriptionConfig {
         private final String name;
-        private AtomicBoolean valueChanged = new AtomicBoolean(false);
         private final List<SubscribableNode> lstNode;
+
+        private AtomicBoolean valueChanged = new AtomicBoolean(false);
         private AtomicLong lastClientRead = new AtomicLong(0L);
 
 
@@ -399,15 +462,12 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
             this.lastClientRead.set(System.currentTimeMillis());
 
             //Conversion de la List<String> en List<SubscribableNode>
+            //TODO: Detection du type de variable demande
             this.lstNode = lstItemPath
                     .stream()
                     .map(itemPath -> new SubscribableNodeCallback(new BasicServerNodeId(opcServer,itemPath),name, DataType.Int4,valueChanged))
                     .collect(Collectors.toList());
-
-
-
         }
-
 
         List<SubscribableNode> getListSubscribableNode(){
             return lstNode;
@@ -418,12 +478,16 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
         }
 
         public String toString(){
-            return String.format("SubscriptionConfig.getListSubscribableNode() > name:%s, lstNode:%s, lastClientRead:%s, valueChanged:%s",name,lstNode,lastClientRead,valueChanged);
+            return String.format("SubscriptionConfig.getListSubscribableNode()> name:%s, lstNode:%s, lastClientRead:%s, valueChanged:%s",name,lstNode,lastClientRead,valueChanged);
         }
 
     }
 
-
+    /**
+     * The manager of the Subscription
+     * Each 30 seconds, it check if a call readValueSubscribe.
+     * If there are no action, the subscription is automatically unsubscribe due to a Timeout.
+     */
     private class TimeoutSubscriptionManager implements Runnable {
 
         @Override
@@ -432,7 +496,7 @@ public class GetOPCGatewayFunctions extends GetOPCScriptFunctions {
             Long currentTimeMillis = System.currentTimeMillis();
             List<String> lstNameSuppress = new ArrayList<>();
 
-            logger.trace("TimeoutSubscriptionManager.run()> Gestionnaire de Timout [currentTime:{}ms]",currentTimeMillis);
+            logger.trace("TimeoutSubscriptionManager.run()> Gestionnaire de Timeout [currentTime:{}ms]",currentTimeMillis);
 
 
             getAllSubscriptionConfig().values().stream()

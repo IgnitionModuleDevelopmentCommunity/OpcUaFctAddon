@@ -121,7 +121,7 @@
                         </projectScope>
                     </projectScopes>
 
-                    <moduleId>com.bouyguesenergiesservices.ignition.OpcUaFctAddon</moduleId>
+                    <moduleId>com.bouyguesenergiesservices.OpcUaFctAddon</moduleId>
                     <moduleName>${project.parent.name}</moduleName>
                     <moduleDescription>${project.description}</moduleDescription>
                     <moduleVersion>${module-version}.${timestamp}</moduleVersion>
@@ -133,15 +133,15 @@
                     <hooks>
                         <hook>
                             <scope>C</scope>
-                            <hookClass>com.bouyguesenergiesservices.client.ClientHook</hookClass>
+                            <hookClass>com.bouyguesenergiesservices.opcuafctaddon.client.ClientHook</hookClass>
                         </hook>
                         <hook>
                             <scope>D</scope>
-                            <hookClass>com.bouyguesenergiesservices.designer.DesignerHook</hookClass>
+                            <hookClass>com.bouyguesenergiesservices.opcuafctaddon.designer.DesignerHook</hookClass>
                         </hook>
                         <hook>
                             <scope>G</scope>
-                            <hookClass>com.bouyguesenergiesservices.gateway.GatewayHook</hookClass>
+                            <hookClass>com.bouyguesenergiesservices.opcuafctaddon.gateway.GatewayHook</hookClass>
                         </hook>
                     </hooks>
 

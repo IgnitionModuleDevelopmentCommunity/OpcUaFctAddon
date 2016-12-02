@@ -1,4 +1,4 @@
-package com.bouyguesenergiesservices;
+package com.bouyguesenergiesservices.opcuafctaddon;
 
 
 import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
@@ -11,6 +11,10 @@ import com.inductiveautomation.ignition.common.script.hints.ScriptFunction;
 import java.util.List;
 
 /**
+ * When the script functions are called from the Gateway, client, or designer, "system.byes.opc" the
+ * actual code is executed here. Classes in the Gateway and client extend this class within their scopes and implement
+ * any abstract functions in their own way.
+ *
  * Created by regis on 18/10/2016.
  */
 public abstract class GetOPCScriptFunctions implements GetOPCRPC {
