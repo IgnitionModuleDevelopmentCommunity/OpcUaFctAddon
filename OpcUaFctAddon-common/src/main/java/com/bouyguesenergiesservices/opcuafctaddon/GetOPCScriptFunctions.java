@@ -19,12 +19,6 @@ import java.util.List;
  */
 public abstract class GetOPCScriptFunctions implements GetOPCRPC {
 
-    static {
-        BundleUtil.get().addBundle(
-                GetOPCScriptFunctions.class.getSimpleName(),
-                GetOPCScriptFunctions.class.getClassLoader(),
-                GetOPCScriptFunctions.class.getName().replace('.', '/'));
-    }
 
     @Override
     @ScriptFunction(docBundlePrefix =  "GetOPCScriptFunctions")
