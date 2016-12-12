@@ -2,6 +2,7 @@ package com.bouyguesenergiesservices.opcuafctaddon.gateway;
 
 import com.bouyguesenergiesservices.opcuafctaddon.gateway.service.GetOPCService;
 import com.bouyguesenergiesservices.opcuafctaddon.gateway.service.GetOPCServiceImpl;
+import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
