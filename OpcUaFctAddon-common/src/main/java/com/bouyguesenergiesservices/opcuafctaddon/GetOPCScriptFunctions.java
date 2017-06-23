@@ -66,6 +66,7 @@ public abstract class GetOPCScriptFunctions implements GetOPCRPC {
     }
 
 
+
     //Fonctions a implementer non exposees
     protected abstract List<QualifiedValue> readValuesImpl(String remoteServer, String opcServer, List<String> lstItemPath);
 
