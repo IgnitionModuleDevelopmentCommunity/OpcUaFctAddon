@@ -13,3 +13,13 @@ hs_err_pid*
 
 #Ignore all ideo folder
 .idea
+
+#Some Exception
+*/target/
+*/src/
+
+# git repos
+.git/
+
+
+
