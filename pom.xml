@@ -14,6 +14,7 @@
 
     <properties>
         <ignition-sdk-version>7.9.0-SNAPSHOT</ignition-sdk-version>
+        <!--<ignition-sdk-version>7.9.3</ignition-sdk-version>!-->
     </properties>
 
     <modules>
@@ -22,6 +23,7 @@
         <module>OpcUaFctAddon-common</module>
         <module>OpcUaFctAddon-designer</module>
         <module>OpcUaFctAddon-gateway</module>
+        <module>designer-launcher</module>
     </modules>
 
     <pluginRepositories>

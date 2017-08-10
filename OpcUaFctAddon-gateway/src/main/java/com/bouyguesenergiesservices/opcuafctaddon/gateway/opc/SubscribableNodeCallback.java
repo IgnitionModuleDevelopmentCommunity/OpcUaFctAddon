@@ -23,8 +23,9 @@ public class SubscribableNodeCallback implements SubscribableNode {
     private final String subscriptionName;
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private AtomicBoolean refresh;
-    private QualifiedValue qualifiedValue;
-    private Quality quality;
+    private QualifiedValue qualifiedValue = null;
+    private Quality quality = null;
+
 
 
     public SubscribableNodeCallback(ServerNodeId serverNodeId, String subscriptionName, DataType dataType, AtomicBoolean refresh) {
@@ -50,9 +51,11 @@ public class SubscribableNodeCallback implements SubscribableNode {
      */
     @Override
     public void setValue(QualifiedValue qualifiedValue) {
-        this.qualifiedValue = qualifiedValue;
-        this.refresh.set(true);// record a change on the subscription owner
-        logger.trace("setValue()> Changement de valeur [subscriptionName:{}, node:{}, value:{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), qualifiedValue.getValue().toString());
+        if (!qualifiedValue.equals(this.qualifiedValue)) {
+            this.qualifiedValue = qualifiedValue;
+            this.refresh.set(true);// record a change on the subscription owner
+            logger.trace("setValue()> Changement de valeur [subscriptionName:{}, node:{}, value:{}]", subscriptionName, nodeSubsDef.getServerNodeId().toString(), qualifiedValue.getValue().toString());
+        }
     }
 
     /**
@@ -81,6 +84,11 @@ public class SubscribableNodeCallback implements SubscribableNode {
     @Override
     public QualifiedValue getLastSubscriptionValue() {
         return qualifiedValue;
+    }
+
+
+    public String toString(){
+        return nodeSubsDef.getServerNodeId().getNodeId().toString();
     }
 
 

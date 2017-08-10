@@ -1,6 +1,6 @@
 package com.bouyguesenergiesservices.opcuafctaddon.designer;
 
-import com.bouyguesenergiesservices.opcuafctaddon.client.GetOPCClientFunctions;
+import com.bouyguesenergiesservices.opcuafctaddon.client.ClientFct;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
 import com.inductiveautomation.ignition.designer.model.AbstractDesignerModuleHook;
@@ -18,6 +18,17 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private DesignerContext designerContext = null;
+    private ClientFct designerScriptModule = null;
+
+    @Override
+    public void startup(DesignerContext context, LicenseState activationState) throws Exception {
+        logger.trace("startup()");
+        super.startup(context, activationState);
+        this.designerContext = context;
+    }
+
+
     /**
      * Initialize a newly-instantiated script manager.
      * This will be called exactly once.
@@ -28,8 +39,10 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     @Override
     public void initializeScriptManager(ScriptManager manager){
         super.initializeScriptManager(manager);
-        manager.addScriptModule( "system.byes.opc",
-                new GetOPCClientFunctions(),
+
+        designerScriptModule = new ClientFct(designerContext);
+        manager.addScriptModule( "byes.opcuafctaddon",
+                designerScriptModule,
                 new PropertiesFileDocProvider());
 
         logger.trace("initializeScriptManager()");
