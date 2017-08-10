@@ -23,7 +23,6 @@
         <module>OpcUaFctAddon-common</module>
         <module>OpcUaFctAddon-designer</module>
         <module>OpcUaFctAddon-gateway</module>
-        <module>designer-launcher</module>
     </modules>
 
     <pluginRepositories>
