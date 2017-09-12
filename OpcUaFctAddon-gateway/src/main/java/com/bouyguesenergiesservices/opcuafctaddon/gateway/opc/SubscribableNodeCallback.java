@@ -28,10 +28,15 @@ public class SubscribableNodeCallback implements SubscribableNode {
 
 
 
-    public SubscribableNodeCallback(ServerNodeId serverNodeId, String subscriptionName, DataType dataType, AtomicBoolean refresh) {
+    public SubscribableNodeCallback(ServerNodeId serverNodeId, String subscriptionName, DataType dataType, AtomicBoolean refresh, QualifiedValue initQualifiedValue) {
         this.nodeSubsDef = new BasicNodeSubscriptionDefinition(subscriptionName,serverNodeId,dataType);
         this.subscriptionName = subscriptionName;
         this.refresh = refresh;
+        this.qualifiedValue = initQualifiedValue;
+
+        if (initQualifiedValue!=null){
+            this.refresh.set(true);// record a change on the subscription owner
+        }
     }
 
     /**

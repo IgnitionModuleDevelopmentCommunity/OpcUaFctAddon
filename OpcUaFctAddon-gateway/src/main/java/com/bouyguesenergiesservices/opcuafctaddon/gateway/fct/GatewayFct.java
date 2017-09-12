@@ -13,12 +13,14 @@ import com.inductiveautomation.ignition.gateway.opc.SubscribableNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 
@@ -29,18 +31,22 @@ import java.util.stream.Stream;
  */
 public abstract class GatewayFct{
 
-    public static final int RATE_TIMEOUT_MANAGER = 10000; //ms
+    public static final int RATE_TIMEOUT_MANAGER = 60000; // 1 min
 
     public final Logger logger = LoggerFactory.getLogger(getClass());
 
     public final OPCManager opcm;
     public final ExecutionManager execm;
-    public final GatewayContext context;
+
 
     //Client Communication
     private final String sessionId;
     private NotifyManager notifyManager = new NotifyManager();
     private boolean isNotifyManagerStarted = false;
+
+    private TimeoutManager timeoutManager = new TimeoutManager();
+    private boolean isTimeoutManagerStarted = false;
+    private AtomicLong lastCommunication;
 
     //Subscription OPC Elements
     private List<SubscribableNode> lstNode;
@@ -50,8 +56,10 @@ public abstract class GatewayFct{
     public GatewayFct(GatewayContext _context,String _sessionId){
         this.opcm = _context.getOPCManager();
         this.execm = _context.getExecutionManager();
-        this.context = _context;
         this.sessionId = _sessionId;
+        this.lastCommunication = new AtomicLong(System.currentTimeMillis());
+
+
     }
 
 
@@ -73,11 +81,17 @@ public abstract class GatewayFct{
         //create a new empty OPC subscription
         opcm.setSubscriptionRate(sessionId,rate);
 
-        //prepare structure 'SubscribableNodeCallback'
-        if (prepareSubscription(lstOPCItemPath,opcServer,sessionId,rate)){
+        //Make first read to initialize Value quickly
+        List<QualifiedValue> initQualifiedValue = initializeValues(opcServer, lstOPCItemPath);
 
-            //Make first read to initialize Value quickly
-            initializeValues(opcServer, lstOPCItemPath);
+        //prepare structure 'SubscribableNodeCallback'
+        if (prepareSubscription(lstOPCItemPath,opcServer,sessionId,rate,initQualifiedValue)){
+
+            //Init TimeoutManager
+            if (!isTimeoutManagerStarted) {
+                execm.registerWithInitialDelay(sessionId, TimeoutManager.class.getName(), timeoutManager, RATE_TIMEOUT_MANAGER, TimeUnit.MILLISECONDS, RATE_TIMEOUT_MANAGER);
+                isTimeoutManagerStarted = true;
+            }
 
             //Create OPC subscription
             opcm.subscribe(lstNode);
@@ -88,6 +102,10 @@ public abstract class GatewayFct{
             opcm.cancelSubscription(sessionId);
             logger.debug("subscribe() > cancel to declare new subscription sessionId:[{}]", sessionId);
         }
+
+        //Record the last call from the client
+        keepAliveFromMyConsumer();
+
         return result;
     }
 
@@ -103,21 +121,34 @@ public abstract class GatewayFct{
             } else {
                 //unsubscribe in OPC
                 opcm.unsubscribe(lstNode);
-                lstNode.clear();
                 logger.debug("unsubscribe()> All OPC Node are unsubscribe lstNode:[{}] sessionId:[{}]", lstNode.toString(),sessionId);
+                lstNode.clear();
             }
 
         }
-    }
 
-    public void shutdown(){
-        logger.trace("shutdown()> Received shutdown request sessionId:[{}]",sessionId);
-        if (!lstNode.isEmpty()){
-            unSubscribe();
-        }
         //stop timer to notifyManager / timeoutManager
         execm.unRegister(sessionId,NotifyManager.class.getName());
         isNotifyManagerStarted = false;
+
+        execm.unRegister(sessionId,TimeoutManager.class.getName());
+        isTimeoutManagerStarted = false;
+
+
+        //Record the last call from the client
+        keepAliveFromMyConsumer();
+    }
+
+    /**
+     * Shutdown all process
+     */
+    public void shutdown(){
+        logger.trace("shutdown()> Received shutdown request sessionId:[{}]",sessionId);
+        if (lstNode != null) {
+            if (!lstNode.isEmpty()) {
+                unSubscribe();
+            }
+        }
 
     }
 
@@ -130,23 +161,28 @@ public abstract class GatewayFct{
      * @param rate Frequency update
      * @return True if everything is prepare
      */
-    private boolean prepareSubscription(List<String> lstOPCItemPath, String opcServer, String subscriptionName, int rate){
+    private boolean prepareSubscription(List<String> lstOPCItemPath, String opcServer, String subscriptionName, int rate,List<QualifiedValue> initQualifiedValue ){
         boolean result=true;
 
         //TODO: Gere autre type de variable
-        //Create all SubscribableNodeCallback for each tag subscribe
-       this.lstNode = new ArrayList<>(lstOPCItemPath
-                .stream()
-                .map(itemPath -> new SubscribableNodeCallback(new BasicServerNodeId(opcServer,itemPath),subscriptionName, DataType.Int4,valueChanged))
-                .collect(Collectors.toList()));
-        logger.debug("prepareSubscription()> listNode:[{}] sessionId:[{}]",lstNode,sessionId);
+        //Create all SubscribableNodeCallback for each tag subscribe with a intialize value
+        this.lstNode = new ArrayList<>();
+        IntStream.range(0, lstOPCItemPath.size())
+                .forEach(index -> {
+                    QualifiedValue initValue = initQualifiedValue.get(index);
+                    lstNode.add(new SubscribableNodeCallback(new BasicServerNodeId(opcServer,lstOPCItemPath.get(index)),subscriptionName, DataType.Int4,valueChanged,initValue));
+                });
+
+
+
+        logger.trace("prepareSubscription()> listNode:[{}] sessionId:[{}]",lstNode,sessionId);
 
 
         this.rate = rate;
         if (!isNotifyManagerStarted){
             //Register the cyclic to manage notify changed Tag client
             logger.debug("prepareSubscription()> Declare a cyclic execution notifyManager rate:[{}ms] sessionId:[{}]",rate, sessionId);
-            execm.register(sessionId,NotifyManager.class.getName(), notifyManager,rate, TimeUnit.MILLISECONDS);
+            execm.registerWithInitialDelay(sessionId,NotifyManager.class.getName(), notifyManager,rate, TimeUnit.MILLISECONDS,100);
             isNotifyManagerStarted = true;
         } else {
             logger.warn("prepareSubscription()> NotifyManager is already started previous rate:[{}]",this.rate);
@@ -161,7 +197,7 @@ public abstract class GatewayFct{
      * @param opcServer OPC Server declare in Gateway
      * @param lstItemPath List of all Node name
      */
-    private void initializeValues(String opcServer, List<String> lstItemPath){
+    private  List<QualifiedValue> initializeValues(String opcServer, List<String> lstItemPath){
         //Convert List<String> to List<ServerNodeId>
         List<ServerNodeId> lstServerNode =  lstItemPath
                 .stream()
@@ -171,8 +207,16 @@ public abstract class GatewayFct{
         //start an OPC reading
         List<QualifiedValue> qualifiedValues = opcm.read(lstServerNode);
 
-        notifyMyConsumer(qualifiedValues);
+       return qualifiedValues;
 
+    }
+
+
+    /**
+     * The Client notify that is always alive
+     */
+    public void keepAliveFromMyConsumer() {
+        lastCommunication.set(System.currentTimeMillis());
     }
 
     @Override
@@ -188,13 +232,10 @@ public abstract class GatewayFct{
 
         @Override
         public void run() {
-            logger.trace("NotifyManager.run()> sessionId:[{}]",sessionId);
             if (!lstNode.isEmpty()) {
                 if (valueChanged.compareAndSet(true, false)) {
                     //Notify client
                     try {
-                        logger.debug("NotifyManager.run()> Sending notification to the client sessionId:[{}]", sessionId);
-
                         List<QualifiedValue> listNewValue = lstNode.stream()
                                 .map(SubscribableNode::getLastSubscriptionValue)
                                 .collect(Collectors.toList());
@@ -215,5 +256,32 @@ public abstract class GatewayFct{
      * @param listNewValue List of all new Value
      */
     public abstract void notifyMyConsumer(List<QualifiedValue> listNewValue);
+
+
+    private class TimeoutManager implements Runnable{
+        @Override
+        public void run() {
+            logger.trace("TimeoutManager.run()> sessionId:[{}]",sessionId);
+
+            long currentTime = System.currentTimeMillis();
+            long lastCommTime = lastCommunication.get();
+
+
+            logger.trace("TimeoutManager.run()> Check timeout sessionId:[{}] currentTime:[{}] lastCommunication:[{}] RATE_TIMEOUT_MANAGER:[{}] Delta:[{}]",
+                    sessionId,currentTime,lastCommTime,RATE_TIMEOUT_MANAGER/1000,(currentTime-lastCommTime)/1000);
+
+            if ((currentTime - lastCommTime)> RATE_TIMEOUT_MANAGER){
+                logger.debug("TimeoutManager.run()> The sessionId:[{}] is in timeout lastCommunicationDelay:[{}]s > TimeoutLimit:[{}]s ",sessionId,(currentTime-lastCommTime)/1000,RATE_TIMEOUT_MANAGER / 1000);
+
+                notifyTimeoutMyConsumer();
+            } else {
+                logger.trace("TimeoutManager.run()> OK sessionId:[{}]",sessionId);
+            }
+
+
+        }
+    }
+
+    public abstract void notifyTimeoutMyConsumer();
 
 }

@@ -1,8 +1,9 @@
 package com.bouyguesenergiesservices.opcuafctaddon.gateway;
 
+import com.bouyguesenergiesservices.opcuafctaddon.gateway.fct.gan.GatewayFctGANHandler;
 import com.bouyguesenergiesservices.opcuafctaddon.gateway.manager.GatewayFctManager;
-import com.bouyguesenergiesservices.opcuafctaddon.gateway.manager.IGatewayFctRPCManager;
-import com.bouyguesenergiesservices.opcuafctaddon.gateway_interface.IGatewayFctRPCBase;
+import com.bouyguesenergiesservices.opcuafctaddon.gateway_interface.IGatewayFctGANHandler;
+import com.bouyguesenergiesservices.opcuafctaddon.gateway_interface.IGatewayFctRPC;
 
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
@@ -10,6 +11,7 @@ import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.clientcomm.ClientReqSession;
 
+import com.inductiveautomation.metro.api.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,8 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private GatewayContext context;
+    private GatewayFctGANHandler service;
+    private GatewayFctManager manager;
 
     /**
      * A free BOUYGUES ENERGIES AND SERVICES module
@@ -40,6 +44,9 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     public void setup(GatewayContext gatewayContext) {
 
        this.context = gatewayContext;
+       this.manager = GatewayFctManager.getInstance(gatewayContext);
+
+
 
        logger.trace("setup()");
     }
@@ -53,8 +60,10 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     @Override
     public void startup(LicenseState licenseState) {
 
-        //Reinit subscription All (Local / GAN)  GatewayFct
-        GatewayFctManager.getInstance(context).allUnsubscribe();
+        //init my GAN service
+        ServiceManager sm = context.getGatewayAreaNetworkManager().getServiceManager();
+        service = new GatewayFctGANHandler(context);
+        sm.registerService(IGatewayFctGANHandler.class, service);
 
         logger.trace("startup()");
 
@@ -68,8 +77,11 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     @Override
     public void shutdown() {
 
-        //Shutdown All (Local / GAN)  GatewayFct
-        GatewayFctManager.getInstance(context).shutdown();
+        manager.shutdownAll();
+
+        //Remove GAN Services
+        ServiceManager sm = context.getGatewayAreaNetworkManager().getServiceManager();
+        sm.unregisterService(IGatewayFctGANHandler.class);
 
         logger.trace("shutdown()");
     }
@@ -99,8 +111,7 @@ public class GatewayHook extends AbstractGatewayModuleHook  {
     @Override
     public Object getRPCHandler(ClientReqSession session, Long projectId) {
         //Create a session just for this client in the gateway context
-        IGatewayFctRPCManager managerRPC = GatewayFctManager.getInstance(context);
-        IGatewayFctRPCBase sessionRPC = managerRPC.getSessionFctRPC(session);
+        IGatewayFctRPC sessionRPC = manager.getSessionFctRPC(session);
         return sessionRPC;
     }
 

@@ -1,7 +1,7 @@
 package com.bouyguesenergiesservices.opcuafctaddon.client;
 
 
-import com.bouyguesenergiesservices.opcuafctaddon.gateway_interface.IGatewayFctRPCBase;
+import com.bouyguesenergiesservices.opcuafctaddon.gateway_interface.IGatewayFctRPC;
 import com.inductiveautomation.ignition.client.gateway_interface.FilteredPushNotificationListener;
 import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnectionManager;
 import com.inductiveautomation.ignition.client.gateway_interface.ModuleRPCFactory;
@@ -49,6 +49,8 @@ public class ClientFct {
     private static final String TAGPATH_CLIENT_DATASET = "[Client]opcua_subscription";
     private static final Integer UPDATE_FREQUENCY_MS = 250;
     private static final String EXECUTION_ENGINE_NAME = "CyclicUpdateTagClientDatasetFromDataset";
+    private static final Integer KEEPALIVE_FREQUENCY_MS = 30000;
+    private static final String KEEPALIVE_ENGINE_NAME = "CyclicKeepAlive";
 
     private static final String NAME_COLUMN_PK = "OPC";
     private static final String NAME_COLUMN_TAG_PATH = "TagFullPath";
@@ -60,7 +62,7 @@ public class ClientFct {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final IGatewayFctRPCBase myGatewayRpc;
+    private final IGatewayFctRPC myGatewayRpc;
     private final ClientContext clientContext;
 
 
@@ -68,18 +70,22 @@ public class ClientFct {
     private AtomicBoolean updateTagClientFlag = new AtomicBoolean(false);
     private BasicExecutionEngine executionEngine = null;
     private ExecutionCyclic executionCyclic = null;
+    private KeepAliveCyclic keepAliveCyclic = null;
 
     private boolean flagRegistered = false;
 
 
     // Dataset elements
     private BasicDataset dataset = null;
+    private String opcServer;
+    private String remoteServer;
     private List<Class<?>> listColumnTypes = null;
     private HashMap<String,GroupColumnsInfo> listGroupManage = new HashMap<>(); // Key: Name Column
 
 
+
     private List<String> listTagPath = new ArrayList<>();
-    private List<String> listTagColumName = new ArrayList<>();
+    private List<String> listTagColumnName = new ArrayList<>();
     private List<Integer> listTagRowIndex = new ArrayList<>();
 
     private BasicDataset freezeDataset = null;
@@ -90,7 +96,7 @@ public class ClientFct {
      * Group Columns Informations manage by the this module
      * (Your groupColumn name, index of all associated columns (TagFullPath,Value,Quality,LastChange)
      */
-    private class GroupColumnsInfo{
+    public class GroupColumnsInfo{
 
         private final String REGEX_NAME_COLUMN_VALUE = String.format("%s_(.*?)(\\.Value)",NAME_COLUMN_PK);
         private final String REGEX_NAME_COLUMN_QUALITY = String.format("%s_(.*?)(\\.Quality)",NAME_COLUMN_PK);
@@ -196,7 +202,7 @@ public class ClientFct {
     public ClientFct(ClientContext clientContext){
 
         this.clientContext = clientContext;
-        this.myGatewayRpc = ModuleRPCFactory.create("com.bouyguesenergiesservices.OpcUaFctAddon", IGatewayFctRPCBase.class);
+        this.myGatewayRpc = ModuleRPCFactory.create("com.bouyguesenergiesservices.OpcUaFctAddon", IGatewayFctRPC.class);
         //register my Notification Listener to the Gateway
         GatewayConnectionManager.getInstance().addPushNotificationListener(new MyGatewayNotificationListener("com.bouyguesenergiesservices.OpcUaFctAddon","TagChanged"));
 
@@ -220,18 +226,18 @@ public class ClientFct {
             listGroupManage.clear();
             listColumnTypes = new ArrayList<Class<?>>(dataset.getColumnTypes());
 
-           //Search all PK REGEX_NAME_COLUMN_TAGPATH and extract only name and index for the groupName
+            //Search all PK REGEX_NAME_COLUMN_TAGPATH and extract only name and index for the groupName
             IntStream.range(0,columnNames.size())
                     .forEach(index-> {
 
-                Pattern pattern = Pattern.compile(REGEX_NAME_COLUMN_TAGPATH);
-                Matcher matcher = pattern.matcher(columnNames.get(index));
+                        Pattern pattern = Pattern.compile(REGEX_NAME_COLUMN_TAGPATH);
+                        Matcher matcher = pattern.matcher(columnNames.get(index));
 
-                if (matcher.find()) {
-                    logger.debug("searchAllManagedCol()> This column [{}] is a REGEX_NAME_COLUMN_TAGPATH", matcher.group(1));
-                    listGroupManage.put(matcher.group(1), new GroupColumnsInfo(matcher.group(1), index));
-                }
-            });
+                        if (matcher.find()) {
+                            logger.debug("searchAllManagedCol()> This column [{}] is a REGEX_NAME_COLUMN_TAGPATH", matcher.group(1));
+                            listGroupManage.put(matcher.group(1), new GroupColumnsInfo(matcher.group(1), index));
+                        }
+                    });
 
             //Search each supported name column in DS ColumnNames for all group
             IntStream.range(0,columnNames.size())
@@ -278,8 +284,8 @@ public class ClientFct {
      * @param keywords List of keywords
      */
     @ScriptFunction(docBundlePrefix = "ClientFct")
-    @KeywordArgs(names = {"dataset"},
-            types = {Dataset.class})
+    @KeywordArgs(names = {"opcServer","dataset"},
+            types = {String.class,Dataset.class})
     public synchronized void subscribe(PyObject[] pyArgs, String[] keywords)
     {
         boolean result = false;
@@ -288,6 +294,7 @@ public class ClientFct {
 
             PyArgumentMap args = PyArgumentMap.interpretPyArgs(pyArgs, keywords, ClientFct.class, "subscribe");
             logger.trace("subscribe()> map args:[{}]",args.toString());
+            String opcServer = (String) args.getArg("opcServer","");
             Dataset datasetInput = (Dataset) args.getArg("dataset",null);
             if (datasetInput!=null){
                 // unsubscribe previous dataset
@@ -295,7 +302,7 @@ public class ClientFct {
                 if (searchAllManagedCol(datasetInput)){
                     // copy
                     dataset = new BasicDataset(datasetInput.getColumnNames(),listColumnTypes,datasetInput);
-                    subscribeDataset(datasetInput);
+                    subscribeDataset("",opcServer,datasetInput);
                 }
 
             } else {
@@ -307,11 +314,52 @@ public class ClientFct {
     }
 
     /**
+     * Subscribe OPC item include in dataset (with GAN possibility)
+     *
+     * @param pyArgsGan List of all arguments
+     * @param keywords List of keywords
+     */
+    @ScriptFunction(docBundlePrefix = "ClientFct")
+    @KeywordArgs(names = {"remoteServer","opcServer","dataset"},
+            types = {String.class,String.class,Dataset.class})
+
+    public synchronized void subscribeGAN(PyObject[] pyArgsGan, String[] keywords)
+    {
+        boolean result = false;
+        // If the function is calling without keyword, parameters are tagged with the name indicate in KeywordArgs(names=...)
+        try {
+
+            PyArgumentMap args = PyArgumentMap.interpretPyArgs(pyArgsGan, keywords, ClientFct.class, "subscribeGAN");
+            logger.trace("subscribe()> map args:[{}]",args.toString());
+            String remoteServer = (String) args.getArg("remoteServer","");
+            String opcServer = (String) args.getArg("opcServer","");
+            Dataset datasetInput = (Dataset) args.getArg("dataset",null);
+            if (datasetInput!=null){
+                // unsubscribe previous dataset
+                unsubscribeAll();
+                if (searchAllManagedCol(datasetInput)){
+                    // copy
+                    dataset = new BasicDataset(datasetInput.getColumnNames(),listColumnTypes,datasetInput);
+                    subscribeDataset(remoteServer,opcServer,datasetInput);
+                }
+
+            } else {
+                logger.error("Dataset is null");
+            }
+        } catch (Exception e) {
+            logger.error("error : ",e);
+        }
+    }
+
+
+    /**
      * Subscribe all tags found in this Dataset
      *
+     * @param remoteServer
+     * @param opcServer
      * @param ds dataset to manage
      */
-    private void subscribeDataset(Dataset ds) {
+    private void subscribeDataset(String remoteServer,String opcServer,Dataset ds) {
         // erase lists of subscribed tags
         listTagPath.clear();
 
@@ -319,36 +367,45 @@ public class ClientFct {
         freezeDataset=null;
 
         //extract all tag to read in dataset
-        if (checkTagClientExist() == false) {
+        if (!checkTagClientExist()) {
             logger.error("You must create tag client with the name:[{}] to receive the dataset update", TAGPATH_CLIENT_DATASET);
         }
 
         IntStream.range(0,ds.getRowCount())
                 .forEach(rowIndex ->{
-                    listGroupManage.forEach( (String columName, GroupColumnsInfo objTagPath) -> {
-                        String curTagPath = ds.getValueAt(rowIndex,objTagPath.columnIndex).toString();
-                        //Record TagPath and position in DS
-                        listTagPath.add(curTagPath);
-                        listTagColumName.add(columName);
-                        listTagRowIndex.add(rowIndex);
-                    });
+                            listGroupManage.forEach( (String columName, GroupColumnsInfo objTagPath) -> {
+                                String curTagPath = ds.getValueAt(rowIndex,objTagPath.columnIndex).toString();
+                                //Record TagPath and position in DS
+                                listTagPath.add(curTagPath);
+                                listTagColumnName.add(columName);
+                                listTagRowIndex.add(rowIndex);
+                            });
                         }
                 );
 
-       if (listTagPath.isEmpty()){
-           logger.debug("subscribeDataset()> No subscriptions to add");
-       } else {
-           //TODO:Si pb souscription
-           boolean result = myGatewayRpc.subscribe("com_api",listTagPath,1000);
-           logger.debug("Notify the Gateway to subscribe result:[{}] listTagPath:[{}]",result,listTagPath.toString());
+        if (listTagPath.isEmpty()){
+            logger.debug("subscribeDataset()> No subscriptions to add");
+        } else {
+            //TODO:Si pb souscription
+            boolean result;
+            this.remoteServer = remoteServer;
+            this.opcServer = opcServer;
+            if (remoteServer.equals("")){
+                result = myGatewayRpc.subscribe(opcServer, listTagPath, 1000);
+            } else{
+                logger.debug("{}",myGatewayRpc);
+                result = myGatewayRpc.subscribe(remoteServer, opcServer, listTagPath, 1000);
 
-           // create the first time
-           if (executionEngine == null) {
-               executionEngine = new BasicExecutionEngine();
-           }
-           startCyclicUpdateTagClientDataset();
-           updateTagClientDataset();
-       }
+
+            }
+
+            // create the first time
+            if (executionEngine == null) {
+                executionEngine = new BasicExecutionEngine();
+            }
+            startCyclicUpdateTagClientDataset();
+            updateTagClientDataset();
+        }
     }
 
     /**
@@ -373,9 +430,17 @@ public class ClientFct {
             if (executionCyclic == null){
                 executionCyclic = new ExecutionCyclic();
             }
-            logger.debug("startCyclicUpdateTagClientDataset()> BasicExecutionEngine started rate:[{}]ms",UPDATE_FREQUENCY_MS);
+
+            if (keepAliveCyclic == null){
+                keepAliveCyclic = new KeepAliveCyclic();
+            }
+
+            logger.debug("startCyclicUpdateTagClientDataset()> BasicExecutionEngine executionCyclic started rate:[{}]ms",UPDATE_FREQUENCY_MS);
             executionEngine.register("Client-OpcUaFctAddon-Module",EXECUTION_ENGINE_NAME,executionCyclic,UPDATE_FREQUENCY_MS, TimeUnit.MILLISECONDS);
+            logger.debug("startCyclicUpdateTagClientDataset()> BasicExecutionEngine keepAliveCyclic started rate:[{}]ms",KEEPALIVE_FREQUENCY_MS);
+            executionEngine.register("Client-OpcUaFctAddon-Module",KEEPALIVE_ENGINE_NAME,keepAliveCyclic,KEEPALIVE_FREQUENCY_MS, TimeUnit.MILLISECONDS);
             flagRegistered = true;
+
         } else {
             logger.error("BasicExecutionEngine is null => create BasicExecutionEngine before starting it");
         }
@@ -386,8 +451,9 @@ public class ClientFct {
      */
     private void stopCyclicUpdateTagClientDataset(){
         if (executionEngine != null){
-            if (flagRegistered == true) {
+            if (flagRegistered) {
                 executionEngine.unRegister("Client-OpcUaFctAddon-Module", EXECUTION_ENGINE_NAME);
+                executionEngine.unRegister("Client-OpcUaFctAddon-Module", KEEPALIVE_ENGINE_NAME);
                 logger.debug("stopCyclicUpdateTagClientDataset()> BasicExecutionEngine stopped");
                 flagRegistered = false;
             }
@@ -411,7 +477,9 @@ public class ClientFct {
     public void shutdown(){
         stopCyclicUpdateTagClientDataset();
         shutdownCyclicUpdateTagClientDataset();
-        myGatewayRpc.notifyShutdown();
+
+        myGatewayRpc.notifyClosureRPCClient();
+
         logger.debug("ClientFct shutdown");
     }
 
@@ -421,13 +489,15 @@ public class ClientFct {
     @ScriptFunction(docBundlePrefix = "ClientFct")
     public synchronized void unsubscribeAll() {
         try {
+            logger.debug("unsubscribeAll()> listTagPath:[{}]",listTagPath);
             if ((listTagPath != null)){
                 if (!listTagPath.isEmpty() ){
-                    myGatewayRpc.unSubscribe();
+                    //myGatewayRpc.unSubscribe();
+                    myGatewayRpc.unSubscribe(remoteServer);
                     logger.debug("unsubscribeAll()> Delete subscriptions for this client in Gateway of [{}] tags",listTagPath.size());
                     listTagPath.clear();
                     listTagRowIndex.clear();
-                    listTagColumName.clear();
+                    listTagColumnName.clear();
                 }
             }
             dataset = null;
@@ -451,7 +521,7 @@ public class ClientFct {
                     logger.debug("freezeAll()> Delete the current subscription for this client in Gateway of [{}] tags",listTagPath.size());
                     listTagPath.clear();
                     listTagRowIndex.clear();
-                    listTagColumName.clear();
+                    listTagColumnName.clear();
                 }
             }
 
@@ -486,12 +556,14 @@ public class ClientFct {
             if (freezeDataset != null){
                 dataset = new BasicDataset(freezeDataset);
                 listGroupManage.putAll(freezeListGroupManage);
-                subscribeDataset(dataset);
+                subscribeDataset(remoteServer,opcServer,dataset);
             }
         } catch (Exception e) {
             logger.error("error : ",e);
         }
     }
+
+
 
 
     /**
@@ -518,7 +590,7 @@ public class ClientFct {
     /**
      * Internal Class to receive notification from the local gateway
      */
-   private class MyGatewayNotificationListener extends FilteredPushNotificationListener {
+    private class MyGatewayNotificationListener extends FilteredPushNotificationListener {
 
         public MyGatewayNotificationListener(String moduleId, String... messageTypes) {
             super(moduleId, messageTypes);
@@ -531,19 +603,19 @@ public class ClientFct {
         @Override
         protected void receive(PushNotification pushNotification) {
 
-                //Force new refresh
-                List<QualifiedValue> lstNewValue = (List<QualifiedValue>) pushNotification.getMessage();
+            //Force new refresh
+            List<QualifiedValue> lstNewValue = (List<QualifiedValue>) pushNotification.getMessage();
 
-                if (lstNewValue == null) {
-                    logger.error("MyGatewayNotificationListener.receive()> Null Message");
+            if (lstNewValue == null) {
+                logger.error("MyGatewayNotificationListener.receive()> Null Message");
+            } else {
+                if (lstNewValue.size() == listTagPath.size()) {
+                    updateCellDataset(lstNewValue);
                 } else {
-                    if (lstNewValue.size() == listTagPath.size()) {
-                        updateCellDataset(lstNewValue);
-                    } else {
-                        logger.error("MyGatewayNotificationListener.receive()> wrong Size of List<QualifiedValue>");
-                    }
+                    logger.error("MyGatewayNotificationListener.receive()> wrong Size of List<QualifiedValue>");
                 }
-                logger.debug("MyGatewayNotificationListener.receive()> Receive a notification lstNewValue:[{}]", lstNewValue);
+            }
+            logger.debug("MyGatewayNotificationListener.receive()> Receive a notification lstNewValue:[{}]", lstNewValue);
 
         }
 
@@ -557,7 +629,7 @@ public class ClientFct {
         IntStream.range(0, listValue.size())
                 .forEach(index -> {
                     QualifiedValue value = listValue.get(index);
-                    String columnName = listTagColumName.get(index);
+                    String columnName = listTagColumnName.get(index);
                     int rowIndex = listTagRowIndex.get(index);
                     listGroupManage.get(columnName).setValueAtDataset(value, rowIndex);
                 });
@@ -582,6 +654,19 @@ public class ClientFct {
             if (updateTagClientFlag.compareAndSet(true,false)){
                 updateTagClientDataset();
             }
+        }
+
+    }
+
+
+    /**
+     * Send a periodic KeepAlive
+     */
+    private class KeepAliveCyclic implements Runnable{
+        @Override
+        public void run() {
+            //logger.trace("KeepAliveCyclic.run()> Send a KeepAlive to the Gateway");
+            myGatewayRpc.keepAlive();
         }
 
     }

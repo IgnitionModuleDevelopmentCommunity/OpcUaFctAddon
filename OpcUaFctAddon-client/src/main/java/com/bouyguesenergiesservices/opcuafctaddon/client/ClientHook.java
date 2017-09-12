@@ -45,7 +45,9 @@ public class ClientHook extends AbstractClientModuleHook {
 
     }
 
-
+    /**
+     * Call Shutdown before closing
+     */
     @Override
     public void shutdown() {
        //Unsubscribe this client

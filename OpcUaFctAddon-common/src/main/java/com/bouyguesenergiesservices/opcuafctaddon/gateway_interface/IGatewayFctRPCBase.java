@@ -27,6 +27,19 @@ public interface IGatewayFctRPCBase {
     /**
      * Notify the gateway that this connection RPC (client) is shutdown
      */
-    void notifyShutdown();
+    void notifyClosureRPCClient();
+
+
+    /**
+     * Notify the gateway that the client is still alive
+     */
+    void keepAlive();
+
+    /**
+     * Shutdown all process
+     */
+    void shutdown();
+
+
 
 }
