@@ -2,6 +2,7 @@ com.bouyguesenergiesservices.opcuafctaddon.client
 com.bouyguesenergiesservices.opcuafctaddon.designer
 com.bouyguesenergiesservices.opcuafctaddon.gateway
 com.bouyguesenergiesservices.opcuafctaddon.gateway.fct
+com.bouyguesenergiesservices.opcuafctaddon.gateway.fct.gan
 com.bouyguesenergiesservices.opcuafctaddon.gateway.fct.rpc
 com.bouyguesenergiesservices.opcuafctaddon.gateway.manager
 com.bouyguesenergiesservices.opcuafctaddon.gateway.opc
