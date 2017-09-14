@@ -3,6 +3,7 @@
 *.iml
 
 
+
 #Project
 
 OpcUaFctAddon-common/target/*
@@ -16,3 +17,4 @@ OpcUaFctAddon-build/src/main/resources/module-signer.jar
 OpcUaFctAddon-build/src/main/resources/certif/export_certif.jks
 
 
+javadocs/*
