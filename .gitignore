@@ -1,7 +1,18 @@
-# Intellij
-.idea/
+# IntelliJ project files
+.idea
 *.iml
-*.iws
 
+
+#Project
+
+OpcUaFctAddon-common/target/*
+OpcUaFctAddon-gateway/target/*
+OpcUaFctAddon-designer/target/*
+OpcUaFctAddon-client/target/*
+OpcUaFctAddon-build/target/*
+
+OpcUaFctAddon-build/src/main/resources/certif/byes_siai.p7b
+OpcUaFctAddon-build/src/main/resources/module-signer.jar
+OpcUaFctAddon-build/src/main/resources/certif/export_certif.jks
 
 javadocs/*
