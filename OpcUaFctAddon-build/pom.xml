@@ -28,6 +28,10 @@
         <signer-certif>${project.basedir}/src/main/resources/certif/byes_siai.p7b</signer-certif>
         <signer-export-certif>${project.basedir}/src/main/resources/certif/export_certif.jks</signer-export-certif>
         <signer-pwd>siai</signer-pwd>
+
+        <!--Javadoc!-->
+        <javadoc-title>&lt;H2&gt;Essai - BYES Apps - Opc-UA Functions Add-on&lt;/H2&gt;</javadoc-title>
+        <javadoc-output>D:/Documents/Dev_java/OpcUaFctAddon/javadocs2</javadoc-output>
     </properties>
 
 
@@ -185,6 +189,29 @@
                         <argument>-module-out=${signer-out_module}</argument>
                     </arguments>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.0.0-M1</version>
+                <configuration>
+                    <debug>true</debug>
+                    <outputDirectory>D:/Documents/Dev_java/OpcUaFctAddon/javadocs2</outputDirectory>
+                    <header>${javadoc-title}</header>
+                    <show>private</show>
+                    <nohelp>true</nohelp>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>javadoc</goal>
+                        </goals>
+
+                    </execution>
+                </executions>
+
             </plugin>
 
         </plugins>
