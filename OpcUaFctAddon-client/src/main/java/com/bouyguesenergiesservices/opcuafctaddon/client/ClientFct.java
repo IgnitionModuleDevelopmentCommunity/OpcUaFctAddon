@@ -98,9 +98,9 @@ public class ClientFct {
      */
     public class GroupColumnsInfo{
 
-        private final String REGEX_NAME_COLUMN_VALUE = String.format("%s_(.*?)(\\.Value)",NAME_COLUMN_PK);
-        private final String REGEX_NAME_COLUMN_QUALITY = String.format("%s_(.*?)(\\.Quality)",NAME_COLUMN_PK);
-        private final String REGEX_NAME_COLUMN_TIMESTAMP = String.format("%s_(.*?)(\\.LastChange)",NAME_COLUMN_PK);
+        private final String REGEX_NAME_COLUMN_VALUE;
+        private final String REGEX_NAME_COLUMN_QUALITY;
+        private final String REGEX_NAME_COLUMN_TIMESTAMP;
 
 
         public final String columnName;
@@ -114,6 +114,9 @@ public class ClientFct {
         public GroupColumnsInfo(String _columnName,int _columnIndex){
             this.columnName = _columnName;
             this.columnIndex= _columnIndex;
+            REGEX_NAME_COLUMN_QUALITY = String.format("%s_(.*?)(\\.Quality)",NAME_COLUMN_PK);
+            REGEX_NAME_COLUMN_VALUE = String.format("%s_(.*?)(\\.Value)",NAME_COLUMN_PK);
+            REGEX_NAME_COLUMN_TIMESTAMP = String.format("%s_(.*?)(\\.LastChange)",NAME_COLUMN_PK);
         }
 
 
@@ -131,7 +134,7 @@ public class ClientFct {
                     valueColumnIndex = new ArrayList<>();
                 }
                 valueColumnIndex.add(index);
-                columnType = String.class;
+                columnType = int.class;
 
             }else if (column.matches(REGEX_NAME_COLUMN_QUALITY)) {
                 if (qualityColumnIndex == null){
@@ -156,10 +159,16 @@ public class ClientFct {
          * @param row Index of the row to update
          */
         public void setValueAtDataset(QualifiedValue newValue,  int row) {
-            if (newValue != null){
-                setMyValueAt(valueColumnIndex, newValue.getValue().toString(), row);
-                setMyValueAt(qualityColumnIndex, newValue.getQuality().getDescription().toString(), row);
-                setMyValueAt(timeStampColumnIndex, newValue.getTimestamp(), row);
+            if (newValue != null ){
+                if (newValue.getValue() != null) {
+                    setMyValueAt(valueColumnIndex, newValue.getValue(), row);
+                }
+                if (newValue.getQuality() != null) {
+                    setMyValueAt(qualityColumnIndex, newValue.getQuality().getName(), row);
+                }
+                if (newValue.getTimestamp() != null) {
+                    setMyValueAt(timeStampColumnIndex, newValue.getTimestamp(), row);
+                }
             }
 
         }

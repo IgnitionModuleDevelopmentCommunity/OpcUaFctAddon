@@ -13,7 +13,7 @@ import com.inductiveautomation.ignition.gateway.opc.SubscribableNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 
 /**
@@ -58,8 +57,6 @@ public abstract class GatewayFct{
         this.execm = _context.getExecutionManager();
         this.sessionId = _sessionId;
         this.lastCommunication = new AtomicLong(System.currentTimeMillis());
-
-
     }
 
 
@@ -205,9 +202,7 @@ public abstract class GatewayFct{
                 .collect(Collectors.toList());
 
         //start an OPC reading
-        List<QualifiedValue> qualifiedValues = opcm.read(lstServerNode);
-
-       return qualifiedValues;
+        return opcm.read(lstServerNode);
 
     }
 
