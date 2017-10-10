@@ -13,7 +13,6 @@ import com.inductiveautomation.ignition.gateway.opc.SubscribableNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +29,7 @@ import java.util.stream.IntStream;
  */
 public abstract class GatewayFct{
 
-    public static final int RATE_TIMEOUT_MANAGER = 60000; // 1 min
+    public static final int RATE_TIMEOUT_MANAGER = 30000; // check every 30s
 
     public final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -40,12 +39,13 @@ public abstract class GatewayFct{
 
     //Client Communication
     private final String sessionId;
-    private NotifyManager notifyManager = new NotifyManager();
+    private final NotifyManager notifyManager = new NotifyManager();
     private boolean isNotifyManagerStarted = false;
 
-    private TimeoutManager timeoutManager = new TimeoutManager();
+    private AtomicLong lastComm = new AtomicLong(0);
+    private final TimeoutManager timeoutManager;
     private boolean isTimeoutManagerStarted = false;
-    private AtomicLong lastCommunication;
+
 
     //Subscription OPC Elements
     private List<SubscribableNode> lstNode;
@@ -56,7 +56,7 @@ public abstract class GatewayFct{
         this.opcm = _context.getOPCManager();
         this.execm = _context.getExecutionManager();
         this.sessionId = _sessionId;
-        this.lastCommunication = new AtomicLong(System.currentTimeMillis());
+        this.timeoutManager =  new TimeoutManager(sessionId,lastComm);
     }
 
 
@@ -211,7 +211,7 @@ public abstract class GatewayFct{
      * The Client notify that is always alive
      */
     public void keepAliveFromMyConsumer() {
-        lastCommunication.set(System.currentTimeMillis());
+        timeoutManager.updateTime();
     }
 
     @Override
@@ -254,23 +254,45 @@ public abstract class GatewayFct{
 
 
     private class TimeoutManager implements Runnable{
+
+        private final String sessionId;
+        public volatile AtomicLong lastCommTime;
+
+        public TimeoutManager(String sessionId, AtomicLong lastCommTime){
+            this.sessionId = sessionId;
+            this.lastCommTime = lastCommTime;
+
+            logger.trace("TimeoutManager instance Hashcode:[{}]", this.hashCode());
+        }
+
+        public synchronized long updateTime(){
+            lastCommTime.set( System.currentTimeMillis());
+            logger.trace("TimeoutManager.updateTime TimeoutManager:[{}]", lastCommTime.get());
+            return lastCommTime.get();
+        }
+
+
+
         @Override
         public void run() {
+
             logger.trace("TimeoutManager.run()> sessionId:[{}]",sessionId);
 
-            long currentTime = System.currentTimeMillis();
-            long lastCommTime = lastCommunication.get();
 
+            long currentTime = System.currentTimeMillis();
+            long lastTime = lastCommTime.get();
 
             logger.trace("TimeoutManager.run()> Check timeout sessionId:[{}] currentTime:[{}] lastCommunication:[{}] RATE_TIMEOUT_MANAGER:[{}] Delta:[{}]",
-                    sessionId,currentTime,lastCommTime,RATE_TIMEOUT_MANAGER/1000,(currentTime-lastCommTime)/1000);
+                    sessionId,currentTime,lastTime,30000/1000,(currentTime-lastTime)/1000);
 
-            if ((currentTime - lastCommTime)> RATE_TIMEOUT_MANAGER){
-                logger.debug("TimeoutManager.run()> The sessionId:[{}] is in timeout lastCommunicationDelay:[{}]s > TimeoutLimit:[{}]s ",sessionId,(currentTime-lastCommTime)/1000,RATE_TIMEOUT_MANAGER / 1000);
+            if (lastCommTime.get()>0) {
 
-                notifyTimeoutMyConsumer();
-            } else {
-                logger.trace("TimeoutManager.run()> OK sessionId:[{}]",sessionId);
+                if ((currentTime - lastTime) > 30000) {
+                    logger.debug("TimeoutManager.run()> The sessionId:[{}] is in timeout lastCommunicationDelay:[{}]s > TimeoutLimit:[{}]s ", sessionId, (currentTime - lastTime) / 1000, 3000 / 1000);
+                    notifyTimeoutMyConsumer();
+                } else {
+                    logger.trace("TimeoutManager.run()> OK sessionId:[{}]", sessionId);
+                }
             }
 
 

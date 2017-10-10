@@ -14,9 +14,7 @@ import com.inductiveautomation.metro.api.services.ServiceState;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 /**
  * Created by regis on 07/08/2017.
@@ -131,8 +129,8 @@ public class GatewayFctRPC extends GatewayFctRPCBase implements IGatewayFctRPC,S
                 logger.debug("keepAlive()> it is a GAN request (Service unavailable) sessionId:[{}]",session.getId());
             }
             else {
-                logger.trace("keepAlive()> it is a GAN request sessionId:[{}]",session.getId());
-                String result = service.invokeMyGatewayFct(lastRemoteServer,session.getId(),"keepAlive",null,null);
+                logger.debug("keepAlive()> it is a GAN request sessionId:[{}]",session.getId());
+                String result = service.invokeMyGatewayFct(serverCurrentName,session.getId(),"keepAlive",null,null);
 
             }
         }
@@ -149,7 +147,7 @@ public class GatewayFctRPC extends GatewayFctRPCBase implements IGatewayFctRPC,S
 
         if (listNewValue!=null){
             if (!listNewValue.isEmpty()){
-                logger.debug("notifyMyConsumer()> Send notifyMyConsumer sessionId:[{}] listNewValue:[{}]",session.getId(),listNewValue);
+                logger.trace("notifyMyConsumer()> Send notifyMyConsumer sessionId:[{}] listNewValue:[{}]",session.getId(),listNewValue);
                 super.notifyMyConsumer(listNewValue);
             }
         }
@@ -162,6 +160,7 @@ public class GatewayFctRPC extends GatewayFctRPCBase implements IGatewayFctRPC,S
     @Override
     public void notifyClosureRPCClient() {
 
+        logger.debug("notifyClosureRPCClient> Notify that the client close");
         //notify last remote Server to close this GAN session
         notifyGANManagerShutdown(lastRemoteServer,500);
 

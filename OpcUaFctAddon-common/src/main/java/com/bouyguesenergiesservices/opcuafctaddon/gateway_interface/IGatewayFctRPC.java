@@ -1,7 +1,5 @@
 package com.bouyguesenergiesservices.opcuafctaddon.gateway_interface;
 
-import com.inductiveautomation.ignition.common.model.values.QualifiedValue;
-
 import java.util.List;
 
 /**
@@ -27,6 +25,12 @@ public interface IGatewayFctRPC extends IGatewayFctRPCBase {
      * @param remoteServer The name of the remoteServer gateway
      */
     void unSubscribe(String remoteServer);
+
+    /**
+     * Notify the gateway that the client is still alive
+     */
+    void keepAlive();
+
 
 
 

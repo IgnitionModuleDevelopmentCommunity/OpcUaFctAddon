@@ -14,9 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Created by regis on 07/08/2017.
@@ -138,6 +135,7 @@ public class GatewayFctGAN extends GatewayFct implements IGatewayFctGAN,Serializ
      */
     @Override
     public void keepAlive() {
+        logger.trace("keepAlive> Receive a keepAlive.");
         super.keepAliveFromMyConsumer();
     }
 
